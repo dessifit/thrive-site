@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thrive — Calories, Workouts & Runs in One App</title>
+<meta name="description" content="Stop juggling five fitness apps. Thrive tracks calories, workouts, runs, steps and your watch in one place. Join the waitlist.">
+<meta property="og:title" content="Thrive — one fitness app instead of five">
+<meta property="og:description" content="Calories, workouts, runs and your watch in one place. Join the waitlist.">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero{padding:24px 0 8px}
+  .hero h1{font-size:2.5rem;letter-spacing:-.025em}
+  .lead{font-size:1.15rem;color:var(--muted);margin:12px 0 24px}
+  form{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  input[type=email]{flex:1 1 240px;min-width:0;font:inherit;padding:12px 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg)}
+  button{font:inherit;font-weight:700;padding:12px 22px;border-radius:999px;border:0;background:var(--accent);color:var(--bg);cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .hp{position:absolute;left:-9999px}
+  #msg{min-height:1.6em;margin:6px 0 0}
+  #msg.ok{color:var(--accent);font-weight:600}
+  .apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:28px 0}
+  .apps div{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .apps s{color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .card{border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card b{display:block;margin-bottom:4px}
+  footer{margin-top:48px;font-size:.9rem;color:var(--muted)}
+</style>
+</head>
+<body><main>
+<section class="hero">
+  <h1>One fitness app.<br>Not five.</h1>
+  <p class="lead">Calories, workouts, runs, steps and your smartwatch, all in one place. Coming to Android first.</p>
+
+  <form id="wl" novalidate>
+    <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address">
+    <input class="hp" type="text" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button type="submit" id="go">Join the waitlist</button>
+  </form>
+  <p id="msg" class="muted" role="status">We'll email you once, on launch day. No spam.</p>
+</section>
+
+<div class="apps" aria-label="What it replaces">
+  <div><s>Calorie app</s></div>
+  <div><s>Workout app</s></div>
+  <div><s>Running app</s></div>
+  <div><s>Watch app</s></div>
+  <div><b>Thrive</b></div>
+</div>
+
+<div class="grid">
+  <div class="card"><b>Describe your meal</b>Type or say what you ate. Thrive breaks it down, and you can check every number before saving.</div>
+  <div class="card"><b>Workouts that progress</b>340+ exercises, a target for every set, and strength charts so you can see you're getting stronger.</div>
+  <div class="card"><b>Runs and steps</b>GPS runs, and steps counted all day, even when the app is closed.</div>
+  <div class="card"><b>Works with your watch</b>Sleep, heart rate and activity through Health Connect.</div>
+</div>
+
+<footer>
+  Thrive · <a href="privacy.html">Privacy policy</a> · <a href="delete.html">Delete your data</a> · <a href="mailto:fitdessi.app@gmail.com">Contact</a><br>
+  General fitness guidance, not medical advice. For ages 16+.
+</footer>
+</main>
+<script>
+// Saves the email to the Supabase "waitlist" table. The table only allows
+// adding rows, so nobody can read the list from this page.
+// The anon key below is public by design; the table rules keep the list private.
+const SUPABASE_URL = 'https://ikdkfnfbwzadcmauhjqu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrZGtmbmZid3phZGNtYXVoanF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0OTY5OTUsImV4cCI6MjEwODA3Mjk5NX0.T2Sw2FO-UIo41JJ1HHDlgtg6j-FhtaRYIoxzJVpA1lQ';
+
+const form = document.getElementById('wl'), msg = document.getElementById('msg'), btn = document.getElementById('go');
+const say = (t, ok) => { msg.textContent = t; msg.className = ok ? 'ok' : 'muted'; };
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  if (document.getElementById('website').value) return; // bot
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say('Please enter a valid email address.'); return; }
+  btn.disabled = true; say('Adding you…');
+  const source = new URLSearchParams(location.search).get('from') || document.referrer.split('/')[2] || 'direct';
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+                 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ email, source: source.slice(0, 40) })
+    });
+    if (!r.ok && r.status !== 409) throw new Error(r.status); // 409 = already on the list
+    form.reset(); say("You're on the list. We'll email you on launch day.", true);
+  } catch (err) {
+    say('Something went wrong. Please try again, or email fitdessi.app@gmail.com.');
+  } finally { btn.disabled = false; }
+});
+</script>
+</body>
+</html>
